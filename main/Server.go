@@ -16,6 +16,8 @@ import (
 	"github.com/priyanshu-gupta07/MovieFlix-backend/models"
 )
 
+const version = "1.0.0"
+
 // Application config
 type config struct {
 	port int
