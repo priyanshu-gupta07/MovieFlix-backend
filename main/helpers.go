@@ -52,10 +52,10 @@ func (app *application) writeJSON(w http.ResponseWriter, status int, data interf
 	return nil
 }
 
-func (app *application)errorJSON(w http.ResponseWriter, err error,status ...int) {
+func (app *application) errorJSON(w http.ResponseWriter, err error, status ...int) {
 	statusCode := http.StatusBadRequest
 
-	if(len(status)>0) {
+	if len(status) > 0 {
 		statusCode = status[0]
 	}
 	type jsonError struct {
@@ -65,4 +65,25 @@ func (app *application)errorJSON(w http.ResponseWriter, err error,status ...int)
 		Message: err.Error(),
 	}
 	app.writeJSON(w, statusCode, theError, "error")
+}
+
+// badRequest sends a JSON response with status http.StatusBadRequest, describing the error
+func (app *application) badRequest(w http.ResponseWriter, r *http.Request, err error) error {
+	var payload struct {
+		Error   bool   `json:"error"`
+		Message string `json:"message"`
+	}
+
+	payload.Error = true
+	payload.Message = err.Error()
+
+	out, err := json.MarshalIndent(payload, "", "\t")
+	if err != nil {
+		return err
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusBadRequest)
+	w.Write(out)
+	return nil
 }
