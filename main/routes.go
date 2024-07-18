@@ -19,6 +19,13 @@ import (
 func (app *application) routes() http.Handler {
 	router := httprouter.New()
 
+
+	// // initialize secure middleware
+	// secure := alice.New(app.authenticate)
+
+	// // initialize admin middleware
+	// secureAdmin := alice.New(app.adminAuth)
+
 	// Define your routes here
 	router.HandlerFunc(http.MethodGet, "/v1/status", app.GetStatus)
 	router.HandlerFunc(http.MethodGet, "/v1/movies", app.getAllMovies)
