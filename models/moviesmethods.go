@@ -69,6 +69,7 @@ func (m *DbModel) GetAllMovies() ([]*Movie, error) {
 		if err != nil {
 			return nil, err
 		}
+		movie.Image = "https://res.cloudinary.com/dvc85iwpj/image/upload/v1720247654/download_i0205y.png"
 		movie.MovieGenre = make(map[int]string)
 
 		// get genres, if any
@@ -318,9 +319,8 @@ func (m *DbModel) GetLatestMovies(userID ...int) ([]*Movie, error) {
 		if err != nil {
 			return nil, err
 		}
-
 		if !image.Valid || image.String == "" {
-			movie.Image = fmt.Sprintf("https://res.cloudinary.com/%s/image/upload/download.png", os.Getenv("CLOUD_NAME"))
+			movie.Image = "https://res.cloudinary.com/dvc85iwpj/image/upload/v1720247654/download_i0205y.png"
 		} else {
 			movie.Image = fmt.Sprintf("https://res.cloudinary.com/%s/image/upload/%s", os.Getenv("CLOUD_NAME"), image.String)
 		}
@@ -371,13 +371,14 @@ func (m *DbModel) GetLatestMovies(userID ...int) ([]*Movie, error) {
 }
 
 func (m *DbModel) GetMoviesByGenre(genreID int) ([]*Movie, error) {
-    ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-    defer cancel()
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
 
-    query := `
+	query := `
     SELECT DISTINCT ON (m.id)
         m.id, 
         m.title, 
+		m.image,
         m.description, 
         m.year, 
         m.release_date, 
@@ -404,44 +405,51 @@ func (m *DbModel) GetMoviesByGenre(genreID int) ([]*Movie, error) {
     ORDER BY m.id, rating DESC
     `
 
-    rows, err := m.Db.QueryContext(ctx, query, genreID)
-    if err != nil {
-        return nil, err
-    }
-    defer rows.Close()
+	rows, err := m.Db.QueryContext(ctx, query, genreID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
 
-    var movies []*Movie
-    for rows.Next() {
-        var movie Movie
-        var genreIDs []int64  // Changed to int64
-        var genreNames []string
+	var movies []*Movie
+	for rows.Next() {
+		var image sql.NullString
+		var movie Movie
+		var genreIDs []int64 // Changed to int64
+		var genreNames []string
 
-        err := rows.Scan(
-            &movie.ID,
-            &movie.Title,
-            &movie.Description,
-            &movie.Year,
-            &movie.ReleaseDate,
-            &movie.Rating,
-            &movie.Runtime,
-            &movie.CreatedAt,
-            &movie.UpdatedAt,
-            pq.Array(&genreIDs),
-            pq.Array(&genreNames),
-        )
-        if err != nil {
-            return nil, err
-        }
+		err := rows.Scan(
+			&movie.ID,
+			&movie.Title,
+			&image,
+			&movie.Description,
+			&movie.Year,
+			&movie.ReleaseDate,
+			&movie.Rating,
+			&movie.Runtime,
+			&movie.CreatedAt,
+			&movie.UpdatedAt,
+			pq.Array(&genreIDs),
+			pq.Array(&genreNames),
+		)
+		if err != nil {
+			return nil, err
+		}
+		if !image.Valid || image.String == "" {
+			movie.Image = "https://res.cloudinary.com/dvc85iwpj/image/upload/v1720247654/download_i0205y.png"
+		} else {
+			movie.Image = fmt.Sprintf("https://res.cloudinary.com/%s/image/upload/%s", os.Getenv("CLOUD_NAME"), image.String)
+		}
 
-        movie.MovieGenre = make(map[int]string)
-        for i, id := range genreIDs {
-            movie.MovieGenre[int(id)] = genreNames[i]  // Convert int64 to int
-        }
+		movie.MovieGenre = make(map[int]string)
+		for i, id := range genreIDs {
+			movie.MovieGenre[int(id)] = genreNames[i] // Convert int64 to int
+		}
 
-        movies = append(movies, &movie)
-    }
+		movies = append(movies, &movie)
+	}
 
-    return movies, nil
+	return movies, nil
 }
 
 func (m *DbModel) GetMovie(id int) (*Movie, error) {
@@ -482,7 +490,7 @@ GROUP BY m.id;
 
 	// Check if the Image value is NULL or empty, and if it is, assign a default value
 	if !image.Valid || image.String == "" {
-		movie.Image = fmt.Sprintf("https://res.cloudinary.com/%s/image/upload/no-thumb.jpg", os.Getenv("CLOUD_NAME"))
+		movie.Image = "https://res.cloudinary.com/dvc85iwpj/image/upload/v1720247654/download_i0205y.png"
 	} else {
 		movie.Image = fmt.Sprintf("https://res.cloudinary.com/%s/image/upload/%s", os.Getenv("CLOUD_NAME"), image.String)
 	}
@@ -500,7 +508,6 @@ where
 
 	genreRows, _ := m.Db.QueryContext(ctx, genreQuery, movie.ID)
 
-	
 	for genreRows.Next() {
 		var mg MovieGenre
 		err := genreRows.Scan(
@@ -552,5 +559,3 @@ where
 
 	return &movie, nil
 }
-
-
